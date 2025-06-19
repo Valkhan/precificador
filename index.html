@@ -29,18 +29,51 @@
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Custom CSS -->
+      <!-- Custom CSS -->
     <link href="css/style.css" rel="stylesheet">
+    
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MMP0F2KW0L"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-MMP0F2KW0L', {
+            page_title: 'Precificador - Ferramenta de Cálculo de Preços | Valkhan Tech',
+            page_location: window.location.href,
+            content_group1: 'Precificador'
+        });
+
+        // Track pricing calculation events
+        function trackPricingCalculation(data) {
+            gtag('event', 'calculate_pricing', {
+                event_category: 'Precificador',
+                event_label: 'Cálculo de Precificação',
+                custom_parameters: {
+                    custo: data.custo,
+                    margem_desejada: data.margem_desejada,
+                    quantidade: data.quantidade,
+                    preco_calculado: data.preco_venda
+                }
+            });
+        }
+
+        // Track navigation to main site
+        function trackMainSiteNavigation() {
+            gtag('event', 'navigate_to_main_site', {
+                event_category: 'Precificador',
+                event_label: 'Navegação para Site Principal'
+            });
+        }
+    </script>
 </head>
 
 <body>
     <!-- Header -->
     <header id="header" class="header fixed-top">
         <div class="container">
-            <nav class="navbar navbar-expand-lg">
-                <h1 class="logo">
-                    <a href="https://valkhan.com.br" target="_blank">
+            <nav class="navbar navbar-expand-lg">                <h1 class="logo">
+                    <a href="https://valkhan.com.br" target="_blank" onclick="trackMainSiteNavigation()">
                         <img src="https://valkhan.com.br/img/logos/logoVlkT.svg" alt="Valkhan Tech Logo" class="logoImg">
                         <span>Valkhan Tech</span>
                     </a>
@@ -57,12 +90,11 @@
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item">
                             <a class="nav-link active" href="#simulador">Simulador</a>
+                        </li>                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="PrecificadorApp.mostrarModalAjuda();">Ajuda</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#" onclick="PrecificadorApp.mostrarModalAjuda()">Ajuda</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="https://valkhan.com.br/#about" target="_blank">Saiba Mais</a>
+                            <a class="nav-link" href="https://valkhan.com.br/#about" target="_blank" onclick="trackMainSiteNavigation()">Saiba Mais</a>
                         </li>
                     </ul>
                 </div>
@@ -73,8 +105,7 @@
     <!-- Main Content -->
     <main>
         <div class="container-fluid">
-            <div class="main-container">
-                <h1 class="page-title" id="simulador">
+            <div class="main-container">                <h1 class="page-title" id="simulador">
                     <i class="fas fa-calculator me-3"></i>
                     Precificador Inteligente
                     <i class="fa-regular fa-circle-question ms-3" id="btnAjuda" data-bs-toggle="tooltip" 
@@ -228,11 +259,10 @@
             </div>
             <div class="footer-description">
                 Ferramenta gratuita para cálculo inteligente de preços de venda
-            </div>
-            <div class="footer-links">
-                <a href="https://valkhan.com.br" target="_blank">Valkhan Tech</a>
-                <a href="https://valkhan.com.br#services" target="_blank">Nossos Serviços</a>
-                <a href="https://valkhan.com.br#contact" target="_blank">Contato</a>
+            </div>            <div class="footer-links">
+                <a href="https://valkhan.com.br" target="_blank" onclick="trackMainSiteNavigation()">Valkhan Tech</a>
+                <a href="https://valkhan.com.br#services" target="_blank" onclick="trackMainSiteNavigation()">Nossos Serviços</a>
+                <a href="https://valkhan.com.br#contact" target="_blank" onclick="trackMainSiteNavigation()">Contato</a>
             </div>
             <div class="footer-copyright">
                 &copy; 2025 <strong>Valkhan Tech</strong>. Todos os direitos reservados.

@@ -237,6 +237,17 @@ function inicializar() {
             const resultados = calcularPrecificacao(dados);
             atualizarResultados(resultados);
             
+            // Tracking do Google Analytics
+            if (typeof trackPricingCalculation === 'function') {
+                trackPricingCalculation({
+                    custo: dados.custo,
+                    margem_desejada: dados.margemDesejada * 100,
+                    quantidade: dados.quantidade,
+                    preco_venda: resultados.precoVenda,
+                    margem_real: resultados.margemReal
+                });
+            }
+            
             // Scroll suave para a seção de resultados
             setTimeout(() => {
                 smoothScrollTo('#resultado');
