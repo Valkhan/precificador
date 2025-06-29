@@ -1,0 +1,87 @@
+<!DOCTYPE html><html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora de Custo Hora-Homem</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f8f9fa; }
+    .card { border-radius: 12px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
+    .result { font-size: 1.25rem; font-weight: bold; }
+  </style>
+</head>
+<body>
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card p-4">
+        <h4 class="mb-4">Calculadora de Custo Hora-Homem</h4>
+        <form id="calcForm">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Salário bruto ou pró-labore (R$)</label>
+              <input type="number" class="form-control" id="salario" value="5000">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Encargos (%)</label>
+              <input type="number" class="form-control" id="encargos" value="30">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Benefícios (R$)</label>
+              <input type="number" class="form-control" id="beneficios" value="500">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Custo fixo mensal da empresa (R$)</label>
+              <input type="number" class="form-control" id="fixo" value="6000">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Número de colaboradores produtivos</label>
+              <input type="number" class="form-control" id="colabs" value="3">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Horas produtivas por mês</label>
+              <input type="number" class="form-control" id="horas" value="132">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Margem desejada (%)</label>
+              <input type="number" class="form-control" id="margem" value="30">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Carga tributária estimada (%)</label>
+              <input type="number" class="form-control" id="impostos" value="10">
+            </div>
+          </div>
+          <div class="mt-4 d-grid">
+            <button type="submit" class="btn btn-primary">Calcular</button>
+          </div>
+        </form>
+        <div class="mt-4 alert alert-success d-none" id="resultado">
+          <div class="result">Valor hora mínimo de venda: R$ <span id="valorHora"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><script>
+  document.getElementById('calcForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const salario = parseFloat(document.getElementById('salario').value);
+    const encargos = parseFloat(document.getElementById('encargos').value) / 100;
+    const beneficios = parseFloat(document.getElementById('beneficios').value);
+    const fixo = parseFloat(document.getElementById('fixo').value);
+    const colabs = parseInt(document.getElementById('colabs').value);
+    const horas = parseFloat(document.getElementById('horas').value);
+    const margem = parseFloat(document.getElementById('margem').value) / 100;
+    const impostos = parseFloat(document.getElementById('impostos').value) / 100;
+
+    const custoDireto = salario + (salario * encargos) + beneficios;
+    const rateioFixo = fixo / colabs;
+    const custoTotal = custoDireto + rateioFixo;
+    const custoHora = custoTotal / horas;
+    const valorVenda = custoHora * (1 + margem + impostos);
+
+    document.getElementById('valorHora').textContent = valorVenda.toFixed(2);
+    document.getElementById('resultado').classList.remove('d-none');
+  });
+</script></body>
+</html>
