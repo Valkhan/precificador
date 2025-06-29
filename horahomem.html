@@ -19,16 +19,8 @@
         <form id="calcForm">
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label">Salário bruto ou pró-labore (R$)</label>
-              <input type="number" class="form-control" id="salario" value="5000">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Encargos (%)</label>
-              <input type="number" class="form-control" id="encargos" value="30">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Benefícios (R$)</label>
-              <input type="number" class="form-control" id="beneficios" value="500">
+              <label class="form-label">Custo mensal total por colaborador (R$)</label>
+              <input type="number" class="form-control" id="salario" value="7000">
             </div>
             <div class="col-md-6">
               <label class="form-label">Custo fixo mensal da empresa (R$)</label>
@@ -57,6 +49,13 @@
         </form>
         <div class="mt-4 alert alert-success d-none" id="resultado">
           <div class="result">Valor hora mínimo de venda: R$ <span id="valorHora"></span></div>
+          <hr>
+          <ul class="list-unstyled mb-0">
+            <li>Custo direto mensal por colaborador: R$ <span id="custoDireto"></span></li>
+            <li>Rateio de custos fixos por colaborador: R$ <span id="rateioFixo"></span></li>
+            <li>Custo total por colaborador: R$ <span id="custoTotal"></span></li>
+            <li>Custo hora base: R$ <span id="custoHora"></span></li>
+          </ul>
         </div>
       </div>
     </div>
@@ -66,21 +65,24 @@
     e.preventDefault();
 
     const salario = parseFloat(document.getElementById('salario').value);
-    const encargos = parseFloat(document.getElementById('encargos').value) / 100;
-    const beneficios = parseFloat(document.getElementById('beneficios').value);
     const fixo = parseFloat(document.getElementById('fixo').value);
     const colabs = parseInt(document.getElementById('colabs').value);
     const horas = parseFloat(document.getElementById('horas').value);
     const margem = parseFloat(document.getElementById('margem').value) / 100;
     const impostos = parseFloat(document.getElementById('impostos').value) / 100;
 
-    const custoDireto = salario + (salario * encargos) + beneficios;
+    const custoDireto = salario;
     const rateioFixo = fixo / colabs;
     const custoTotal = custoDireto + rateioFixo;
     const custoHora = custoTotal / horas;
     const valorVenda = custoHora * (1 + margem + impostos);
 
     document.getElementById('valorHora').textContent = valorVenda.toFixed(2);
+    document.getElementById('custoDireto').textContent = custoDireto.toFixed(2);
+    document.getElementById('rateioFixo').textContent = rateioFixo.toFixed(2);
+    document.getElementById('custoTotal').textContent = custoTotal.toFixed(2);
+    document.getElementById('custoHora').textContent = custoHora.toFixed(2);
+
     document.getElementById('resultado').classList.remove('d-none');
   });
 </script></body>
