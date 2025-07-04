@@ -322,6 +322,39 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="categoria-card">
+                            <h5><i class="fas fa-cogs me-2"></i>Serviço</h5>
+                            <p class="text-muted">Custo: $0,0001 por mensagem</p>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Preço Custo (R$)</label>
+                                    <input type="number" class="form-control form-control-sm" 
+                                           id="servico-preco-custo" step="0.0001" min="0">
+                                </div>                                <div class="col-6">
+                                    <label class="form-label">Preço Venda (R$)</label>
+                                    <input type="number" class="form-control form-control-sm" 
+                                           id="servico-preco-venda" step="0.0001" min="0">
+                                </div>
+                            </div>
+                            <div class="slider-container">
+                                <div class="slider-value">
+                                    <span id="servico-value">0</span> mensagens
+                                </div>
+                                <input type="range" class="range-slider" id="servico-slider" 
+                                       min="0" max="1000000" step="1000" value="0">
+                            </div>
+                            <div class="row text-center mt-3">
+                                <div class="col-6">
+                                    <small class="text-muted">Custo Total</small>
+                                    <div class="fw-bold" id="servico-custo">R$ 0,00</div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Faturamento</small>
+                                    <div class="fw-bold text-success" id="servico-faturamento">R$ 0,00</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Resultados -->
@@ -431,20 +464,21 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" 
             integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
     
-    <script>
-        // Configurações de custos por categoria (em dólares)
+    <script>        // Configurações de custos por categoria (em dólares)
         const CUSTOS_CATEGORIA = {
             marketing: 0.0625,
             utilidade: 0.008,
-            autenticacao: 0.0315
+            autenticacao: 0.0315,
+            servico: 0.0001
         };
 
         // Multiplicadores para faturamento
         const MULTIPLICADORES = {
             marketing: 3,
             utilidade: 2,
-            autenticacao: 1.5
-        };        // Dados dos planos de assinatura
+            autenticacao: 1.5,
+            servico: 1
+        };// Dados dos planos de assinatura
         const PLANOS = {
             0: { maxClientes: 40, rateio: 12.50, mensalidade: arredondarParaMultiplos25(50.00), porMil: 0, unitario: 0 },
             10000: { maxClientes: 40, rateio: 12.50, mensalidade: arredondarParaMultiplos25(50.00), porMil: 5.00, unitario: 0.0050 },
@@ -482,9 +516,7 @@
                 document.getElementById('dolar-content').style.display = 'block';
                 calcularTodos();
             }
-        }
-
-        // Função para atualizar limite dos sliders
+        }        // Função para atualizar limite dos sliders
         function atualizarLimiteSliders() {
             const limite = document.getElementById('limite-slider').value;
             
@@ -492,9 +524,10 @@
             document.getElementById('marketing-slider').max = limite;
             document.getElementById('utilidade-slider').max = limite;
             document.getElementById('autenticacao-slider').max = limite;
+            document.getElementById('servico-slider').max = limite;
             
             // Se algum valor atual for maior que o novo limite, ajustar
-            ['marketing', 'utilidade', 'autenticacao'].forEach(categoria => {
+            ['marketing', 'utilidade', 'autenticacao', 'servico'].forEach(categoria => {
                 const slider = document.getElementById(`${categoria}-slider`);
                 if (parseInt(slider.value) > parseInt(limite)) {
                     slider.value = limite;
@@ -525,8 +558,7 @@
         // Função para arredondar para múltiplos de 25 (sem casas decimais)
         function arredondarParaMultiplos25(valor) {
             return Math.round(valor / 25) * 25;
-        }
-        function calcularCategoria(categoria, quantidade, precoCustomizado = null) {
+        }        function calcularCategoria(categoria, quantidade, precoCustomizado = null) {
             const custoUnitarioUSD = CUSTOS_CATEGORIA[categoria];
             const custoUnitarioBRL = custoUnitarioUSD * valorDolar;
             
@@ -538,7 +570,13 @@
             if (precoCustomizado?.venda) {
                 faturamentoUnitario = precoCustomizado.venda;
             } else {
-                faturamentoUnitario = arredondarPara5Centavos(custoUnitarioBRL * MULTIPLICADORES[categoria]);
+                const valorCalculado = custoUnitarioBRL * MULTIPLICADORES[categoria];
+                // Para categoria Serviço, não aplicar arredondamento de 5 centavos
+                if (categoria === 'servico') {
+                    faturamentoUnitario = valorCalculado;
+                } else {
+                    faturamentoUnitario = arredondarPara5Centavos(valorCalculado);
+                }
             }
             
             const faturamentoTotal = faturamentoUnitario * quantidade;
@@ -550,15 +588,20 @@
                 custoUnitario: precoCustoFinal,
                 faturamentoUnitario
             };
-        }
-
-        // Função para atualizar preços calculados nos campos
+        }        // Função para atualizar preços calculados nos campos
         function atualizarPrecosCampos(categoria) {
             if (valorDolar === 0) return;
             
             const custoUnitarioUSD = CUSTOS_CATEGORIA[categoria];
             const custoUnitarioBRL = custoUnitarioUSD * valorDolar;
-            const faturamentoUnitario = arredondarPara5Centavos(custoUnitarioBRL * MULTIPLICADORES[categoria]);
+            
+            let faturamentoUnitario;
+            if (categoria === 'servico') {
+                // Para categoria Serviço, não aplicar arredondamento de 5 centavos
+                faturamentoUnitario = custoUnitarioBRL * MULTIPLICADORES[categoria];
+            } else {
+                faturamentoUnitario = arredondarPara5Centavos(custoUnitarioBRL * MULTIPLICADORES[categoria]);
+            }
             
             const campoCusto = document.getElementById(`${categoria}-preco-custo`);
             const campoVenda = document.getElementById(`${categoria}-preco-venda`);
@@ -568,7 +611,12 @@
                 campoCusto.value = custoUnitarioBRL.toFixed(4);
             }
             if (!campoVenda.value || parseFloat(campoVenda.value) === 0) {
-                campoVenda.value = faturamentoUnitario.toFixed(2);
+                // Para categoria Serviço, mostrar 4 casas decimais
+                if (categoria === 'servico') {
+                    campoVenda.value = faturamentoUnitario.toFixed(4);
+                } else {
+                    campoVenda.value = faturamentoUnitario.toFixed(2);
+                }
             }
         }
 
@@ -637,25 +685,26 @@
             }
             
             return planoBase.mensalidade;
-        }
-
-        // Função para calcular e exibir resultados
+        }        // Função para calcular e exibir resultados
         function calcularResultados() {
             const totalMensagens = parseInt(document.getElementById('marketing-slider').value) +
                                  parseInt(document.getElementById('utilidade-slider').value) +
-                                 parseInt(document.getElementById('autenticacao-slider').value);
+                                 parseInt(document.getElementById('autenticacao-slider').value) +
+                                 parseInt(document.getElementById('servico-slider').value);
             
             // Calcular custos e faturamentos por categoria com preços customizados
             const marketingPrecos = obterPrecosCustomizados('marketing');
             const utilidadePrecos = obterPrecosCustomizados('utilidade');
             const autenticacaoPrecos = obterPrecosCustomizados('autenticacao');
+            const servicoPrecos = obterPrecosCustomizados('servico');
             
             const marketing = calcularCategoria('marketing', parseInt(document.getElementById('marketing-slider').value), marketingPrecos);
             const utilidade = calcularCategoria('utilidade', parseInt(document.getElementById('utilidade-slider').value), utilidadePrecos);
             const autenticacao = calcularCategoria('autenticacao', parseInt(document.getElementById('autenticacao-slider').value), autenticacaoPrecos);
+            const servico = calcularCategoria('servico', parseInt(document.getElementById('servico-slider').value), servicoPrecos);
             
-            const custoMensagens = marketing.custoTotal + utilidade.custoTotal + autenticacao.custoTotal;
-            const faturamentoMensagens = marketing.faturamentoTotal + utilidade.faturamentoTotal + autenticacao.faturamentoTotal;
+            const custoMensagens = marketing.custoTotal + utilidade.custoTotal + autenticacao.custoTotal + servico.custoTotal;
+            const faturamentoMensagens = marketing.faturamentoTotal + utilidade.faturamentoTotal + autenticacao.faturamentoTotal + servico.faturamentoTotal;
               // Obter plano selecionado
             const planoSelecionado = document.getElementById('plano-select').value;
             const planoAtual = PLANOS[planoSelecionado];
@@ -759,15 +808,14 @@
             const rentabilidadeElement = document.getElementById('rentabilidade-total');
             rentabilidadeElement.textContent = `${rentabilidadeFinal.toFixed(1)}%`;
             rentabilidadeElement.className = rentabilidadeFinal > 0 ? 'valor-positivo' : 'valor-negativo';
-        }
-
-        // Função para calcular todos os valores
+        }        // Função para calcular todos os valores
         function calcularTodos() {
             if (valorDolar === 0) return;
             
             atualizarCategoria('marketing');
             atualizarCategoria('utilidade');
             atualizarCategoria('autenticacao');
+            atualizarCategoria('servico');
             atualizarPlano();
             calcularResultados();
         }
@@ -790,6 +838,11 @@
             
             document.getElementById('autenticacao-slider').addEventListener('input', () => {
                 atualizarCategoria('autenticacao');
+                calcularResultados();
+            });
+            
+            document.getElementById('servico-slider').addEventListener('input', () => {
+                atualizarCategoria('servico');
                 calcularResultados();
             });
             
@@ -826,6 +879,17 @@
                 calcularResultados();
             });
             
+            // Campos de preço - Serviço
+            document.getElementById('servico-preco-custo').addEventListener('input', () => {
+                atualizarCategoria('servico');
+                calcularResultados();
+            });
+            
+            document.getElementById('servico-preco-venda').addEventListener('input', () => {
+                atualizarCategoria('servico');
+                calcularResultados();
+            });
+
             // Select de plano
             document.getElementById('plano-select').addEventListener('change', () => {
                 atualizarPlano();
