@@ -196,8 +196,7 @@
                                     <option value="500000">Até 500.000 conversas/mês</option>
                                     <option value="1000000">Até 1.000.000 conversas/mês</option>
                                 </select>
-                            </div>
-                            <div class="row text-center mt-3">
+                            </div>                            <div class="row text-center mt-3">
                                 <div class="col-4">
                                     <small class="text-muted">Rateio</small>
                                     <div class="fw-bold" id="plano-rateio">R$ 0,00</div>
@@ -209,6 +208,15 @@
                                 <div class="col-4">
                                     <small class="text-muted">Por Conversa</small>
                                     <div class="fw-bold" id="plano-unitario">R$ 0,00</div>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <label class="form-label">Mensalidade Customizada (R$)</label>
+                                    <input type="number" class="form-control form-control-sm" 
+                                           id="plano-mensalidade-custom" step="25" min="0" 
+                                           placeholder="Deixe vazio para usar valor padrão">
+                                    <small class="text-muted">Valor será arredondado para múltiplos de 25</small>
                                 </div>
                             </div>
                         </div>
@@ -379,9 +387,9 @@
                                     Limite máximo dos sliders
                                 </label>
                                 <select class="form-select" id="limite-slider">
-                                    <option value="10000">10.000 mensagens</option>
+                                    <option value="10000"selected>10.000 mensagens</option>
                                     <option value="50000">50.000 mensagens</option>
-                                    <option value="100000" selected>100.000 mensagens</option>
+                                    <option value="100000">100.000 mensagens</option>
                                     <option value="500000">500.000 mensagens</option>
                                     <option value="1000000">1.000.000 mensagens</option>
                                 </select>
@@ -436,17 +444,15 @@
             marketing: 4,
             utilidade: 6,
             autenticacao: 3
-        };
-
-        // Dados dos planos de assinatura
+        };        // Dados dos planos de assinatura
         const PLANOS = {
-            0: { maxClientes: 40, rateio: 12.50, mensalidade: 50.00, porMil: 0, unitario: 0 },
-            10000: { maxClientes: 40, rateio: 12.50, mensalidade: 50.00, porMil: 5.00, unitario: 0.0050 },
-            30000: { maxClientes: 40, rateio: 12.50, mensalidade: 87.50, porMil: 2.92, unitario: 0.0029 },
-            50000: { maxClientes: 30, rateio: 16.67, mensalidade: 116.69, porMil: 2.33, unitario: 0.0023 },
-            100000: { maxClientes: 20, rateio: 25.00, mensalidade: 175.00, porMil: 1.75, unitario: 0.00175 },
-            500000: { maxClientes: 5, rateio: 100.00, mensalidade: 700.00, porMil: 1.40, unitario: 0.0014 },
-            1000000: { maxClientes: 1, rateio: 500.00, mensalidade: 3500.00, porMil: 3.50, unitario: 0.0035 }
+            0: { maxClientes: 40, rateio: 12.50, mensalidade: arredondarParaMultiplos25(50.00), porMil: 0, unitario: 0 },
+            10000: { maxClientes: 40, rateio: 12.50, mensalidade: arredondarParaMultiplos25(50.00), porMil: 5.00, unitario: 0.0050 },
+            30000: { maxClientes: 40, rateio: 12.50, mensalidade: arredondarParaMultiplos25(87.50), porMil: 2.92, unitario: 0.0029 },
+            50000: { maxClientes: 30, rateio: 16.67, mensalidade: arredondarParaMultiplos25(116.69), porMil: 2.33, unitario: 0.0023 },
+            100000: { maxClientes: 20, rateio: 25.00, mensalidade: arredondarParaMultiplos25(175.00), porMil: 1.75, unitario: 0.00175 },
+            500000: { maxClientes: 5, rateio: 100.00, mensalidade: arredondarParaMultiplos25(700.00), porMil: 1.40, unitario: 0.0014 },
+            1000000: { maxClientes: 1, rateio: 500.00, mensalidade: arredondarParaMultiplos25(3500.00), porMil: 3.50, unitario: 0.0035 }
         };
 
         let valorDolar = 0;
@@ -511,11 +517,14 @@
                 case '1000000': return '1M';
                 default: return 'Plano';
             }
-        }
-
-        // Função para arredondar para múltiplos de 5 centavos
+        }        // Função para arredondar para múltiplos de 5 centavos
         function arredondarPara5Centavos(valor) {
             return Math.round(valor * 20) / 20;
+        }
+        
+        // Função para arredondar para múltiplos de 25 (sem casas decimais)
+        function arredondarParaMultiplos25(valor) {
+            return Math.round(valor / 25) * 25;
         }
         function calcularCategoria(categoria, quantidade, precoCustomizado = null) {
             const custoUnitarioUSD = CUSTOS_CATEGORIA[categoria];
@@ -595,15 +604,20 @@
                 custoDisplay.textContent = `R$ ${resultado.custoTotal.toFixed(2)}`;
                 faturamentoDisplay.textContent = `R$ ${resultado.faturamentoTotal.toFixed(2)}`;
             }
-        }
-
-        // Função para atualizar plano de assinatura
+        }        // Função para atualizar plano de assinatura
         function atualizarPlano() {
             const select = document.getElementById('plano-select');
             const planoSelecionado = PLANOS[select.value];
+            const mensalidadeCustom = document.getElementById('plano-mensalidade-custom').value;
+            
+            // Usar mensalidade customizada se fornecida, senão usar padrão
+            let mensalidadeFinal = planoSelecionado.mensalidade;
+            if (mensalidadeCustom && mensalidadeCustom > 0) {
+                mensalidadeFinal = arredondarParaMultiplos25(parseFloat(mensalidadeCustom));
+            }
             
             document.getElementById('plano-rateio').textContent = `R$ ${planoSelecionado.rateio.toFixed(2)}`;
-            document.getElementById('plano-mensalidade').textContent = `R$ ${planoSelecionado.mensalidade.toFixed(2)}`;
+            document.getElementById('plano-mensalidade').textContent = `R$ ${mensalidadeFinal.toFixed(0)}`;
             
             // Se for o plano básico (sem conversas), não mostrar valor por conversa
             if (select.value === '0') {
@@ -611,6 +625,18 @@
             } else {
                 document.getElementById('plano-unitario').textContent = `R$ ${planoSelecionado.unitario.toFixed(6)}`;
             }
+        }
+
+        // Função para obter mensalidade atual (considerando customização)
+        function obterMensalidadeAtual(planoKey) {
+            const planoBase = PLANOS[planoKey];
+            const mensalidadeCustom = document.getElementById('plano-mensalidade-custom').value;
+            
+            if (mensalidadeCustom && mensalidadeCustom > 0) {
+                return arredondarParaMultiplos25(parseFloat(mensalidadeCustom));
+            }
+            
+            return planoBase.mensalidade;
         }
 
         // Função para calcular e exibir resultados
@@ -630,19 +656,17 @@
             
             const custoMensagens = marketing.custoTotal + utilidade.custoTotal + autenticacao.custoTotal;
             const faturamentoMensagens = marketing.faturamentoTotal + utilidade.faturamentoTotal + autenticacao.faturamentoTotal;
-            
-            // Obter plano selecionado
+              // Obter plano selecionado
             const planoSelecionado = document.getElementById('plano-select').value;
             const planoAtual = PLANOS[planoSelecionado];
             
             // Gerar tabela de resultados
             const tabela = document.getElementById('tabela-resultados');
             tabela.innerHTML = '';
-            
-            // Sempre adicionar linha do plano de assinatura
-            const custoPlano = planoAtual.mensalidade;
+              // Sempre adicionar linha do plano de assinatura
+            const custoPlano = obterMensalidadeAtual(planoSelecionado);
             const faturamentoTotal = custoPlano + faturamentoMensagens;
-            const planoNome = planoSelecionado === '0' ? 'R$ 50,00' : `R$ ${planoAtual.mensalidade.toFixed(2)}`;
+            const planoNome = `R$ ${custoPlano.toFixed(0)}`;
             const cenarioNome = obterNomePlano(planoSelecionado);
             
             const linhaPlano = document.createElement('tr');
@@ -677,29 +701,27 @@
             
             // Calcular cenários adicionais baseados no plano atual
             const custoTotal = custoMensagens + custoPlano;
-            const custoMedioPorMensagem = custoTotal / totalMensagens;
-            
-            // Se o plano básico está selecionado, mostrar upgrade
+            const custoMedioPorMensagem = custoTotal / totalMensagens;            // Se o plano básico está selecionado, mostrar upgrade
             if (planoSelecionado === '0') {
                 const planoUpgrade = PLANOS['10000'];
-                const custoUpgrade = custoMensagens + planoUpgrade.mensalidade;
-                const faturamentoUpgrade = planoUpgrade.mensalidade + faturamentoMensagens;
+                const mensalidadeUpgrade = obterMensalidadeAtual('10000');
+                const custoUpgrade = custoMensagens + mensalidadeUpgrade;
+                const faturamentoUpgrade = mensalidadeUpgrade + faturamentoMensagens;
                 const cenarioUpgrade = obterNomePlano('10000');
                 
                 const linhaUpgrade = document.createElement('tr');
                 linhaUpgrade.innerHTML = `
                     <td><strong>${cenarioUpgrade}</strong></td>
-                    <td>R$ ${planoUpgrade.mensalidade.toFixed(2)}</td>
+                    <td>R$ ${mensalidadeUpgrade.toFixed(0)}</td>
                     <td>R$ ${faturamentoMensagens.toFixed(2)}</td>
                     <td>R$ ${faturamentoUpgrade.toFixed(2)}</td>
                 `;
-                tabela.appendChild(linhaUpgrade);
-            } else {
+                tabela.appendChild(linhaUpgrade);            } else {
                 // Cenário atual (plano + mensagens)
                 const linhaAtual = document.createElement('tr');
                 linhaAtual.innerHTML = `
                     <td><strong>Atual</strong></td>
-                    <td>R$ ${planoAtual.mensalidade.toFixed(2)}</td>
+                    <td>R$ ${custoPlano.toFixed(0)}</td>
                     <td>R$ ${faturamentoMensagens.toFixed(2)}</td>
                     <td>R$ ${faturamentoTotal.toFixed(2)}</td>
                 `;
@@ -712,14 +734,14 @@
                 if (indiceAtual < planosOrdenados.length - 1) {
                     const proximoPlano = planosOrdenados[indiceAtual + 1].toString();
                     const planoSuperior = PLANOS[proximoPlano];
-                    const custoSuperior = custoMensagens + planoSuperior.mensalidade;
-                    const faturamentoSuperior = planoSuperior.mensalidade + faturamentoMensagens;
+                    const mensalidadeSuperior = obterMensalidadeAtual(proximoPlano);
+                    const custoSuperior = custoMensagens + mensalidadeSuperior;
+                    const faturamentoSuperior = mensalidadeSuperior + faturamentoMensagens;
                     const cenarioSuperior = obterNomePlano(proximoPlano);
-                    
-                    const linhaSuperior = document.createElement('tr');
+                      const linhaSuperior = document.createElement('tr');
                     linhaSuperior.innerHTML = `
                         <td><strong>${cenarioSuperior}</strong></td>
-                        <td>R$ ${planoSuperior.mensalidade.toFixed(2)}</td>
+                        <td>R$ ${mensalidadeSuperior.toFixed(0)}</td>
                         <td>R$ ${faturamentoMensagens.toFixed(2)}</td>
                         <td>R$ ${faturamentoSuperior.toFixed(2)}</td>
                     `;
@@ -815,6 +837,18 @@
                 atualizarLimiteSliders();
             });
             
+            // Campo de mensalidade customizada
+            document.getElementById('plano-mensalidade-custom').addEventListener('input', () => {
+                const valor = parseFloat(document.getElementById('plano-mensalidade-custom').value);
+                if (valor && valor > 0) {
+                    // Arredondar para múltiplos de 25 e atualizar o campo
+                    const valorArredondado = arredondarParaMultiplos25(valor);
+                    document.getElementById('plano-mensalidade-custom').value = valorArredondado;
+                }
+                atualizarPlano();
+                calcularResultados();
+            });
+
             // Inicializar limite dos sliders
             atualizarLimiteSliders();
             
