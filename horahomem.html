@@ -105,6 +105,109 @@
             background: #f8f9fa;
         }
         
+        .equipes-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .equipes-card h5 {
+            color: white;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .equipe-item {
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .equipe-item:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateX(5px);
+        }
+        
+        .equipe-item.active {
+            background: rgba(255,255,255,0.35);
+            border: 2px solid white;
+        }
+        
+        .equipe-nome {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .equipe-info {
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+        
+        .equipe-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn-equipe {
+            padding: 5px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+        
+        .btn-carregar {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-carregar:hover {
+            background: #229954;
+        }
+        
+        .btn-excluir-equipe {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-excluir-equipe:hover {
+            background: #c0392b;
+        }
+        
+        .btn-salvar-equipe {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            width: 100%;
+        }
+        
+        .btn-salvar-equipe:hover {
+            background: #2980b9;
+        }
+        
+        #btnAtualizarEquipe {
+            display: none;
+        }
+        
         .form-floating label {
             color: #7f8c8d;
         }
@@ -289,6 +392,39 @@
                 <div class="row">
                     <!-- Coluna Esquerda - Colaboradores -->
                     <div class="col-12 col-lg-6">
+                        <!-- Gestão de Equipes -->
+                        <div class="equipes-card">
+                            <h5>
+                                <i class="fas fa-users-cog me-2"></i>
+                                Gestão de Equipes
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" id="nomeEquipe" placeholder="Nome da equipe (ex: Equipe Frontend)">
+                                    <button class="btn btn-salvar-equipe" onclick="salvarEquipeAtual()">
+                                        <i class="fas fa-plus me-2"></i>
+                                        Salvar Nova
+                                    </button>
+                                </div>
+                                <button class="btn btn-salvar-equipe" style="background: #f39c12;" onclick="atualizarEquipeAtiva()" id="btnAtualizarEquipe">
+                                    <i class="fas fa-sync-alt me-2"></i>
+                                    Atualizar Equipe Ativa
+                                </button>
+                                <small class="text-white-50 mt-2 d-block">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <span id="infoEquipe">Salve uma nova equipe ou atualize a equipe ativa com as alterações</span>
+                                </small>
+                            </div>
+                            
+                            <div id="listaEquipes">
+                                <p class="text-center text-white-50 mb-0">
+                                    <i class="fas fa-folder-open me-2"></i>
+                                    Nenhuma equipe salva
+                                </p>
+                            </div>
+                        </div>
+                        
                         <!-- Adicionar Novo Colaborador -->
                         <div class="add-colaborador-card">
                             <h5 class="mb-3">
@@ -321,7 +457,7 @@
                                             <label for="diasMes">Dias/Mês</label>
                                         </div>
                                     </div>
-                                    <div class="col-md-12">
+                                    <div class="col-md-6">
                                         <div class="form-floating">
                                             <input type="number" class="form-control" id="totalHorasMes" placeholder="Total Horas/Mês" min="0" step="1">
                                             <label for="totalHorasMes">Total Horas/Mês</label>
@@ -593,6 +729,8 @@
         // LocalStorage keys
         const STORAGE_KEY = 'colaboradores_horahomem';
         const CONFIG_STORAGE_KEY = 'config_horahomem';
+        const EQUIPES_STORAGE_KEY = 'equipes_horahomem';
+        const EQUIPE_ATIVA_KEY = 'equipe_ativa_horahomem';
         let colaboradorEditando = null;
 
         // Funções de formatação
@@ -637,6 +775,219 @@
                 diasMes: document.getElementById('diasMes').value
             };
             localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
+        }
+
+        // ====== FUNÇÕES DE GESTÃO DE EQUIPES ======
+        
+        // Carregar equipes do localStorage
+        function carregarEquipes() {
+            const dados = localStorage.getItem(EQUIPES_STORAGE_KEY);
+            return dados ? JSON.parse(dados) : [];
+        }
+
+        // Salvar equipes no localStorage
+        function salvarEquipes(equipes) {
+            localStorage.setItem(EQUIPES_STORAGE_KEY, JSON.stringify(equipes));
+        }
+
+        // Obter equipe ativa
+        function obterEquipeAtiva() {
+            return localStorage.getItem(EQUIPE_ATIVA_KEY);
+        }
+
+        // Definir equipe ativa
+        function definirEquipeAtiva(idEquipe) {
+            if (idEquipe) {
+                localStorage.setItem(EQUIPE_ATIVA_KEY, idEquipe);
+            } else {
+                localStorage.removeItem(EQUIPE_ATIVA_KEY);
+            }
+        }
+
+        // Salvar equipe atual
+        function salvarEquipeAtual() {
+            const nomeEquipe = document.getElementById('nomeEquipe').value.trim();
+            
+            if (!nomeEquipe) {
+                return;
+            }
+
+            const colaboradores = carregarColaboradores();
+            
+            if (colaboradores.length === 0) {
+                return;
+            }
+
+            const equipes = carregarEquipes();
+            
+            // Verificar se já existe uma equipe com este nome
+            const equipeExistente = equipes.find(e => e.nome.toLowerCase() === nomeEquipe.toLowerCase());
+            
+            if (equipeExistente) {
+                // Não permitir duplicar nome
+                return;
+            }
+            
+            // Criar nova equipe
+            const novaEquipe = {
+                id: Date.now(),
+                nome: nomeEquipe,
+                colaboradores: colaboradores,
+                dataCriacao: new Date().toISOString(),
+                dataAtualizacao: new Date().toISOString()
+            };
+            equipes.push(novaEquipe);
+
+            salvarEquipes(equipes);
+            definirEquipeAtiva(novaEquipe.id);
+            renderizarEquipes();
+            atualizarInfoEquipe();
+            
+            // Limpar campo
+            document.getElementById('nomeEquipe').value = '';
+        }
+
+        // Carregar equipe
+        function carregarEquipe(idEquipe) {
+            const equipes = carregarEquipes();
+            const equipe = equipes.find(e => e.id === idEquipe);
+            
+            if (!equipe) {
+                return;
+            }
+
+            // Carregar colaboradores da equipe diretamente
+            salvarColaboradores(equipe.colaboradores);
+            definirEquipeAtiva(idEquipe);
+            
+            // Atualizar interface
+            renderizarColaboradores();
+            renderizarEquipes();
+            atualizarInfoEquipe();
+            
+            // Recalcular se houver colaboradores
+            if (equipe.colaboradores.length > 0) {
+                calcularResultados();
+            }
+        }
+
+        // Excluir equipe
+        function excluirEquipe(idEquipe) {
+            const equipes = carregarEquipes();
+            const equipe = equipes.find(e => e.id === idEquipe);
+            
+            if (!equipe) {
+                return;
+            }
+
+            // Remover equipe diretamente
+            const novasEquipes = equipes.filter(e => e.id !== idEquipe);
+            salvarEquipes(novasEquipes);
+            
+            // Se era a equipe ativa, remover referência
+            if (obterEquipeAtiva() == idEquipe) {
+                definirEquipeAtiva(null);
+            }
+
+            renderizarEquipes();
+            atualizarInfoEquipe();
+        }
+
+        // Atualizar equipe ativa com colaboradores atuais
+        function atualizarEquipeAtiva() {
+            const equipeAtivaId = obterEquipeAtiva();
+            
+            if (!equipeAtivaId) {
+                return;
+            }
+
+            const colaboradores = carregarColaboradores();
+            
+            if (colaboradores.length === 0) {
+                return;
+            }
+
+            const equipes = carregarEquipes();
+            const equipe = equipes.find(e => e.id == equipeAtivaId);
+            
+            if (!equipe) {
+                return;
+            }
+
+            // Atualizar colaboradores da equipe ativa
+            equipe.colaboradores = colaboradores;
+            equipe.dataAtualizacao = new Date().toISOString();
+
+            salvarEquipes(equipes);
+            renderizarEquipes();
+            atualizarInfoEquipe();
+        }
+
+        // Atualizar informações da equipe ativa na interface
+        function atualizarInfoEquipe() {
+            const equipeAtivaId = obterEquipeAtiva();
+            const btnAtualizar = document.getElementById('btnAtualizarEquipe');
+            const infoEquipe = document.getElementById('infoEquipe');
+            
+            if (equipeAtivaId) {
+                const equipes = carregarEquipes();
+                const equipe = equipes.find(e => e.id == equipeAtivaId);
+                
+                if (equipe) {
+                    btnAtualizar.style.display = 'block';
+                    infoEquipe.innerHTML = `Equipe ativa: <strong>${equipe.nome}</strong> • Clique para atualizar com as alterações`;
+                } else {
+                    btnAtualizar.style.display = 'none';
+                    infoEquipe.textContent = 'Salve uma nova equipe ou carregue uma existente';
+                }
+            } else {
+                btnAtualizar.style.display = 'none';
+                infoEquipe.textContent = 'Salve uma nova equipe ou carregue uma existente';
+            }
+        }
+
+        // Renderizar lista de equipes
+        function renderizarEquipes() {
+            const equipes = carregarEquipes();
+            const container = document.getElementById('listaEquipes');
+            const equipeAtiva = obterEquipeAtiva();
+
+            if (equipes.length === 0) {
+                container.innerHTML = `
+                    <p class="text-center text-white-50 mb-0">
+                        <i class="fas fa-folder-open me-2"></i>
+                        Nenhuma equipe salva
+                    </p>
+                `;
+                return;
+            }
+
+            container.innerHTML = equipes.map(equipe => {
+                const isAtiva = equipeAtiva == equipe.id;
+                const data = new Date(equipe.dataAtualizacao).toLocaleDateString('pt-BR');
+                
+                return `
+                    <div class="equipe-item ${isAtiva ? 'active' : ''}">
+                        <div>
+                            <div class="equipe-nome">
+                                ${isAtiva ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-users"></i>'}
+                                <strong>${equipe.nome}</strong>
+                            </div>
+                            <div class="equipe-info">
+                                ${equipe.colaboradores.length} colaborador(es) • Atualizado em ${data}
+                            </div>
+                        </div>
+                        <div class="equipe-actions">
+                            <button class="btn-equipe btn-carregar" onclick="carregarEquipe(${equipe.id})" title="Carregar equipe">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="btn-equipe btn-excluir-equipe" onclick="excluirEquipe(${equipe.id})" title="Excluir equipe">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         // Calcular total de horas do mês
@@ -1173,6 +1524,9 @@
             // Calcular total de horas inicial
             calcularTotalHoras();
             
+            // Renderizar equipes e colaboradores
+            renderizarEquipes();
+            atualizarInfoEquipe();
             renderizarColaboradores();
             
             // Se houver colaboradores, calcular automaticamente
