@@ -209,7 +209,7 @@
         
         @media (max-width: 768px) {
             .resumo-row {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr !important;
                 gap: 15px;
             }
         }
@@ -360,7 +360,7 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="form-floating">
-                                        <input type="number" class="form-control" id="custoFixo" value="3000" step="100">
+                                        <input type="number" class="form-control" id="custoFixo" value="3000" step="500">
                                         <label for="custoFixo">Custo Fixo Mensal (R$)</label>
                                     </div>
                                 </div>
@@ -384,12 +384,12 @@
                                 </div>
                                 <div class="col-md-12">
                                     <div class="form-floating">
-                                        <input type="number" class="form-control" id="faturamentoExtra" value="2000" min="0" step="500">
-                                        <label for="faturamentoExtra">Faturamento Extra Mensal (R$)</label>
+                                        <input type="number" class="form-control" id="faturamentoExtra" value="0" min="0" step="500">
+                                        <label for="faturamentoExtra">Faturamento Mensal Real (R$)</label>
                                     </div>
                                     <div class="text-muted small mt-1 ms-2">
                                         <i class="fas fa-info-circle me-1"></i>
-                                        Receitas adicionais além das horas dos colaboradores
+                                        Faturamento bruto real da empresa no mês
                                     </div>
                                 </div>
                             </div>
@@ -397,23 +397,37 @@
 
                         <!-- Resumo -->
                         <div class="resumo-card" id="resumoCard" style="display: none;">
-                            <div class="resumo-row">
+                            <div class="resumo-row" style="grid-template-columns: 1fr 1fr 1fr;">
                                 <div class="resumo-col">
                                     <div class="resumo-label">
                                         <i class="fas fa-users me-2"></i>
-                                        Total de Colaboradores
+                                        Pessoas
                                     </div>
                                     <div class="resumo-value" id="totalColabs">0</div>
                                 </div>
                                 <div class="resumo-col">
                                     <div class="resumo-label">
-                                        <i class="fas fa-clock me-2"></i>
-                                        Total de Horas/Mês
+                                        <i class="fas fa-hourglass-half me-2"></i>
+                                        Custo/Hr
                                     </div>
-                                    <div class="resumo-value" id="totalHoras">0</div>
+                                    <div class="resumo-value">R$ <span id="custoHoraUnitario">0</span></div>
+                                </div>
+                                <div class="resumo-col">
+                                    <div class="resumo-label">
+                                        <i class="fas fa-tag me-2"></i>
+                                        Fat. Hr
+                                    </div>
+                                    <div class="resumo-value">R$ <span id="vendaHoraUnitario">0</span></div>
                                 </div>
                             </div>
-                            <div class="resumo-row">
+                            <div class="resumo-row" style="grid-template-columns: 1fr 1fr 1fr;">
+                                <div class="resumo-col">
+                                    <div class="resumo-label">
+                                        <i class="fas fa-users-cog me-2"></i>
+                                        Custo com Pessoas
+                                    </div>
+                                    <div class="resumo-value">R$ <span id="custoColaboradores">0</span></div>
+                                </div>
                                 <div class="resumo-col">
                                     <div class="resumo-label">
                                         <i class="fas fa-dollar-sign me-2"></i>
@@ -449,32 +463,16 @@
                                 <div class="resumo-col">
                                     <div class="resumo-label">
                                         <i class="fas fa-plus-circle me-2"></i>
-                                        Faturamento Extra Mensal
+                                        Faturamento Mensal Real
                                     </div>
                                     <div class="resumo-value">R$ <span id="faturamentoExtraDisplay">0</span></div>
                                 </div>
                                 <div class="resumo-col">
                                     <div class="resumo-label">
                                         <i class="fas fa-money-bill-wave me-2"></i>
-                                        Líquido Extra Mensal
+                                        Impostos sobre Faturamento
                                     </div>
                                     <div class="resumo-value">R$ <span id="liquidoExtraDisplay">0</span></div>
-                                </div>
-                            </div>
-                            <div class="resumo-row">
-                                <div class="resumo-col">
-                                    <div class="resumo-label">
-                                        <i class="fas fa-hourglass-half me-2"></i>
-                                        Total Custo por Hora (1h)
-                                    </div>
-                                    <div class="resumo-value">R$ <span id="custoHoraUnitario">0</span></div>
-                                </div>
-                                <div class="resumo-col">
-                                    <div class="resumo-label">
-                                        <i class="fas fa-tag me-2"></i>
-                                        Faturamento Sugerido por Hora (1h)
-                                    </div>
-                                    <div class="resumo-value">R$ <span id="vendaHoraUnitario">0</span></div>
                                 </div>
                             </div>
                             <div class="resumo-row">
@@ -559,8 +557,9 @@
             integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
     
     <script>
-        // LocalStorage key
+        // LocalStorage keys
         const STORAGE_KEY = 'colaboradores_horahomem';
+        const CONFIG_STORAGE_KEY = 'config_horahomem';
         let colaboradorEditando = null;
 
         // Funções de formatação
@@ -586,6 +585,26 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(colaboradores));
         }
 
+        // Carregar configurações do localStorage
+        function carregarConfiguracoes() {
+            const dados = localStorage.getItem(CONFIG_STORAGE_KEY);
+            return dados ? JSON.parse(dados) : {};
+        }
+
+        // Salvar configurações no localStorage
+        function salvarConfiguracoes() {
+            const config = {
+                custoFixo: document.getElementById('custoFixo').value,
+                margem: document.getElementById('margem').value,
+                impostos: document.getElementById('impostos').value,
+                projecaoMeses: document.getElementById('projecaoMeses').value,
+                faturamentoExtra: document.getElementById('faturamentoExtra').value,
+                horasDia: document.getElementById('horasDia').value,
+                diasMes: document.getElementById('diasMes').value
+            };
+            localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
+        }
+
         // Calcular total de horas do mês
         function calcularTotalHoras() {
             const horasDia = parseFloat(document.getElementById('horasDia').value) || 0;
@@ -605,8 +624,14 @@
         }
 
         // Event listeners para cálculo de horas
-        document.getElementById('horasDia').addEventListener('input', calcularTotalHoras);
-        document.getElementById('diasMes').addEventListener('input', calcularTotalHoras);
+        document.getElementById('horasDia').addEventListener('input', function() {
+            calcularTotalHoras();
+            salvarConfiguracoes();
+        });
+        document.getElementById('diasMes').addEventListener('input', function() {
+            calcularTotalHoras();
+            salvarConfiguracoes();
+        });
 
         // Adicionar ou editar colaborador
         document.getElementById('formColaborador').addEventListener('submit', function(e) {
@@ -861,37 +886,28 @@
             // Obter projeção de meses
             const projecaoMeses = parseInt(document.getElementById('projecaoMeses').value) || 1;
             
-            // Processar faturamento extra
-            const faturamentoExtra = parseFloat(document.getElementById('faturamentoExtra').value) || 0;
-            let liquidoExtra = 0;
-            let custoFixoAjustado = custoFixo;
+            // Processar faturamento mensal real
+            const faturamentoMensalReal = parseFloat(document.getElementById('faturamentoExtra').value) || 0;
             
-            if (faturamentoExtra > 0) {
-                // Calcular líquido do faturamento extra após impostos
-                const faturamentoExtraLiquido = faturamentoExtra * (1 - impostos);
-                
-                // Se o faturamento extra cobrir o custo fixo, abater
-                if (faturamentoExtraLiquido >= custoFixo) {
-                    liquidoExtra = faturamentoExtraLiquido - custoFixo;
-                    custoFixoAjustado = 0; // Custo fixo já foi coberto pelo faturamento extra
-                } else {
-                    // Faturamento extra não cobre todo o custo fixo
-                    liquidoExtra = 0;
-                    custoFixoAjustado = custoFixo - faturamentoExtraLiquido;
-                }
-            }
+            // Calcular rateio por colaborador
+            const rateioColaborador = colaboradores.length > 0 ? custoFixo / colaboradores.length : 0;
             
-            // Calcular rateio por colaborador usando o custo fixo ajustado
-            const rateioColaborador = colaboradores.length > 0 ? custoFixoAjustado / colaboradores.length : 0;
+            // Custo total ajustado (colaboradores + custo fixo)
+            const custoTotalAjustado = custoColaboradores + custoFixo;
             
-            // Recalcular custos considerando faturamento extra
-            const custoTotalAjustado = custoColaboradores + custoFixoAjustado;
+            // Determinar qual faturamento usar para cálculo do líquido
+            const faturamentoParaCalculo = faturamentoMensalReal > 0 ? faturamentoMensalReal : faturamentoMensal;
+            
+            // Calcular impostos sobre o faturamento usado
+            const impostosValor = faturamentoParaCalculo * impostos;
+            
+            // Calcular valor líquido mensal: Faturamento - Impostos - Custo Fixo - Custo Pessoas
+            const liquidoMensal = faturamentoParaCalculo - impostosValor - custoFixo - custoColaboradores;
             
             // Calcular faturamento e valores líquidos do período
             const faturamentoPeriodo = faturamentoMensal * projecaoMeses;
             const custoPeriodo = custoTotalAjustado * projecaoMeses;
-            const liquidoMensal = (faturamentoMensal - custoTotalAjustado) + liquidoExtra;
-            const liquidoPeriodo = (liquidoMensal * projecaoMeses);
+            const liquidoPeriodo = liquidoMensal * projecaoMeses;
             
             // Calcular custo e faturamento por hora unitária (soma de todos os colaboradores)
             // Somar o custo/hora de cada colaborador individualmente
@@ -899,7 +915,7 @@
             colaboradores.forEach(c => {
                 const horas = c.totalHorasMes || (c.horasDia * c.diasMes);
                 const custoDireto = c.valorHora * horas;
-                const rateio = custoFixoAjustado / colaboradores.length;
+                const rateio = custoFixo / colaboradores.length;
                 const custoTotalColab = custoDireto + rateio;
                 const custoHoraColab = custoTotalColab / horas;
                 custoHoraSomatorio += custoHoraColab;
@@ -911,9 +927,17 @@
             const custoHoraUnitario = custoHoraSomatorio;
             const vendaHoraUnitario = vendaHoraSomatorio;
 
+            // Calcular margem real se houver faturamento mensal real informado
+            let margemRealMensal = 0;
+            let margemRealPeriodo = 0;
+            if (faturamentoMensalReal > 0) {
+                margemRealMensal = (liquidoMensal / faturamentoMensalReal) * 100;
+                margemRealPeriodo = (liquidoPeriodo / (faturamentoMensalReal * projecaoMeses)) * 100;
+            }
+            
             // Atualizar resumo
             document.getElementById('totalColabs').textContent = colaboradores.length;
-            document.getElementById('totalHoras').textContent = formatarHoras(totalHoras);
+            document.getElementById('custoColaboradores').textContent = formatarMoeda(custoColaboradores);
             document.getElementById('custoTotal').textContent = formatarMoeda(custoTotalAjustado);
             document.getElementById('rateioColab').textContent = formatarMoeda(rateioColaborador);
             document.getElementById('faturamentoMensal').textContent = formatarMoeda(faturamentoMensal);
@@ -923,12 +947,24 @@
             document.getElementById('liquidoMensal').textContent = formatarMoeda(liquidoMensal);
             document.getElementById('liquidoPeriodo').textContent = formatarMoeda(liquidoPeriodo);
             
-            // Mostrar/ocultar linha de faturamento extra
+            // Atualizar labels com margem real se houver faturamento informado
+            const labelLiquidoMensal = document.querySelector('#resumoCard .resumo-row:last-child .resumo-col:first-child .resumo-label');
+            const labelLiquidoPeriodo = document.querySelector('#resumoCard .resumo-row:last-child .resumo-col:last-child .resumo-label');
+            
+            if (faturamentoMensalReal > 0) {
+                labelLiquidoMensal.innerHTML = `<i class="fas fa-hand-holding-usd me-2"></i>Valor Líquido Mensal (${margemRealMensal.toFixed(2)}%)`;
+                labelLiquidoPeriodo.innerHTML = `<i class="fas fa-coins me-2"></i>Valor Líquido do Período (${margemRealPeriodo.toFixed(2)}%)`;
+            } else {
+                labelLiquidoMensal.innerHTML = `<i class="fas fa-hand-holding-usd me-2"></i>Valor Líquido Mensal`;
+                labelLiquidoPeriodo.innerHTML = `<i class="fas fa-coins me-2"></i>Valor Líquido do Período`;
+            }
+            
+            // Mostrar/ocultar linha de faturamento mensal real
             const rowFaturamentoExtra = document.getElementById('rowFaturamentoExtra');
-            if (faturamentoExtra > 0) {
+            if (faturamentoMensalReal > 0) {
                 rowFaturamentoExtra.style.display = 'grid';
-                document.getElementById('faturamentoExtraDisplay').textContent = formatarMoeda(faturamentoExtra);
-                document.getElementById('liquidoExtraDisplay').textContent = formatarMoeda(faturamentoExtra * (1 - impostos));
+                document.getElementById('faturamentoExtraDisplay').textContent = formatarMoeda(faturamentoMensalReal);
+                document.getElementById('liquidoExtraDisplay').textContent = formatarMoeda(impostosValor);
             } else {
                 rowFaturamentoExtra.style.display = 'none';
             }
@@ -941,8 +977,8 @@
                 // Usar totalHorasMes se disponível, senão calcular
                 const horas = c.totalHorasMes || (c.horasDia * c.diasMes);
                 const custoDireto = c.valorHora * horas;
-                // Usar o custo fixo ajustado para o rateio (considerando abatimento do faturamento extra)
-                const rateio = custoFixoAjustado / colaboradores.length;
+                // Usar o custo fixo para o rateio
+                const rateio = custoFixo / colaboradores.length;
                 const custoTotalColab = custoDireto + rateio;
                 const custoHoraBaseColab = custoTotalColab / horas;
                 
@@ -967,30 +1003,35 @@
 
         // Atualizar cálculos quando inputs mudarem
         document.getElementById('custoFixo').addEventListener('input', function() {
+            salvarConfiguracoes();
             if (carregarColaboradores().length > 0) {
                 calcularResultados();
             }
         });
 
         document.getElementById('margem').addEventListener('input', function() {
+            salvarConfiguracoes();
             if (carregarColaboradores().length > 0) {
                 calcularResultados();
             }
         });
 
         document.getElementById('impostos').addEventListener('input', function() {
+            salvarConfiguracoes();
             if (carregarColaboradores().length > 0) {
                 calcularResultados();
             }
         });
 
         document.getElementById('projecaoMeses').addEventListener('input', function() {
+            salvarConfiguracoes();
             if (carregarColaboradores().length > 0) {
                 calcularResultados();
             }
         });
 
         document.getElementById('faturamentoExtra').addEventListener('input', function() {
+            salvarConfiguracoes();
             if (carregarColaboradores().length > 0) {
                 calcularResultados();
             }
@@ -1015,6 +1056,16 @@
 
         // Inicializar
         document.addEventListener('DOMContentLoaded', function() {
+            // Carregar configurações salvas
+            const config = carregarConfiguracoes();
+            if (config.custoFixo !== undefined) document.getElementById('custoFixo').value = config.custoFixo;
+            if (config.margem !== undefined) document.getElementById('margem').value = config.margem;
+            if (config.impostos !== undefined) document.getElementById('impostos').value = config.impostos;
+            if (config.projecaoMeses !== undefined) document.getElementById('projecaoMeses').value = config.projecaoMeses;
+            if (config.faturamentoExtra !== undefined) document.getElementById('faturamentoExtra').value = config.faturamentoExtra;
+            if (config.horasDia !== undefined) document.getElementById('horasDia').value = config.horasDia;
+            if (config.diasMes !== undefined) document.getElementById('diasMes').value = config.diasMes;
+            
             // Calcular total de horas inicial
             calcularTotalHoras();
             
