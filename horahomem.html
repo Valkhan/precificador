@@ -407,7 +407,7 @@
 
                         <!-- Resumo -->
                         <div class="resumo-card" id="resumoCard" style="display: none;">
-                            <div class="resumo-row" style="grid-template-columns: 1fr 1fr 1fr;">
+                            <div class="resumo-row" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
                                 <div class="resumo-col">
                                     <div class="resumo-label">
                                         <i class="fas fa-users me-2"></i>
@@ -425,9 +425,16 @@
                                 <div class="resumo-col">
                                     <div class="resumo-label">
                                         <i class="fas fa-tag me-2"></i>
-                                        Fat. Hr
+                                        Fat. Hr Sugerido
                                     </div>
                                     <div class="resumo-value">R$ <span id="vendaHoraUnitario">0</span></div>
+                                </div>
+                                <div class="resumo-col">
+                                    <div class="resumo-label">
+                                        <i class="fas fa-file-invoice-dollar me-2"></i>
+                                        Fat. Hr Aplicado
+                                    </div>
+                                    <div class="resumo-value">R$ <span id="valorHoraAplicado">0</span></div>
                                 </div>
                             </div>
                             <div class="resumo-row" style="grid-template-columns: 1fr 1fr 1fr;">
@@ -886,98 +893,123 @@
             const custoFixo = parseFloat(document.getElementById('custoFixo').value) || 0;
             const margem = parseFloat(document.getElementById('margem').value) / 100 || 0;
             const impostos = parseFloat(document.getElementById('impostos').value) / 100 || 0;
+            const projecaoMeses = parseInt(document.getElementById('projecaoMeses').value) || 1;
+            const faturamentoMensalReal = parseFloat(document.getElementById('faturamentoExtra').value) || 0;
+            const antecipacaoLucros = parseFloat(document.getElementById('antecipacaoLucros').value) || 0;
 
-            // Calcular totais
+            // ====== 1. CALCULAR CUSTOS BASE ======
             let totalHoras = 0;
             let custoColaboradores = 0;
 
             colaboradores.forEach(c => {
-                // Usar totalHorasMes se disponível, senão calcular
                 const horas = c.totalHorasMes || (c.horasDia * c.diasMes);
                 totalHoras += horas;
                 custoColaboradores += c.valorHora * horas;
             });
 
-            const rateioFixo = custoFixo;
-            const custoTotal = custoColaboradores + rateioFixo;
-            const custoHoraBase = totalHoras > 0 ? custoTotal / totalHoras : 0;
-            
-            // Calcular valor/hora de venda considerando margem e impostos
-            // Fórmula: Valor Venda = Custo Base / (1 - Margem - Impostos)
-            // Isso garante que após impostos e margem, sobra exatamente a margem líquida desejada
-            const valorHoraVenda = custoHoraBase / (1 - margem - impostos);
-            
-            // Calcular faturamento mínimo mensal (soma de todas as horas de venda)
-            const faturamentoMensal = valorHoraVenda * totalHoras;
-            
-            // Obter projeção de meses
-            const projecaoMeses = parseInt(document.getElementById('projecaoMeses').value) || 1;
-            
-            // Processar faturamento mensal real
-            const faturamentoMensalReal = parseFloat(document.getElementById('faturamentoExtra').value) || 0;
-            
-            // Calcular rateio por colaborador
+            const custoTotalOperacional = custoColaboradores + custoFixo + antecipacaoLucros;
             const rateioColaborador = colaboradores.length > 0 ? custoFixo / colaboradores.length : 0;
             
-            // Custo total ajustado (colaboradores + custo fixo)
-            const custoTotalAjustado = custoColaboradores + custoFixo;
+            // ====== 2. CALCULAR VALOR/HORA E FATURAMENTO ======
+            // IMPORTANTE: Horas UNITÁRIAS (de um colaborador médio) para cálculo de valor/hora
+            // Não podemos usar totalHoras pois são horas paralelas de múltiplos colaboradores
+            const horasUnitarias = colaboradores.length > 0 ? totalHoras / colaboradores.length : 0;
             
-            // Determinar qual faturamento usar para cálculo do líquido
-            const faturamentoParaCalculo = faturamentoMensalReal > 0 ? faturamentoMensalReal : faturamentoMensal;
+            // Calcular o faturamento necessário para atingir EXATAMENTE a margem desejada
+            const custoTotal = custoColaboradores + custoFixo;
+            const faturamentoMinimo = custoTotal / (1 - margem - impostos);
             
-            // Calcular impostos sobre o faturamento usado
-            const impostosValor = faturamentoParaCalculo * impostos;
+            // VALOR/HORA SUGERIDO: SEMPRE baseado na margem desejada (independente do faturamento real)
+            const valorHoraSugerido = horasUnitarias > 0 ? faturamentoMinimo / horasUnitarias : 0;
             
-            // Calcular valor líquido mensal: Faturamento - Impostos - Custo Fixo - Custo Pessoas
-            const liquidoMensal = faturamentoParaCalculo - impostosValor - custoFixo - custoColaboradores;
+            // VALOR/HORA APLICADO: baseado no faturamento real informado (se houver)
+            const valorHoraAplicado = (faturamentoMensalReal > 0 && horasUnitarias > 0) 
+                ? faturamentoMensalReal / horasUnitarias 
+                : valorHoraSugerido;
             
-            // Calcular faturamento e valores líquidos do período
-            const faturamentoPeriodo = faturamentoMensal * projecaoMeses;
-            const custoPeriodo = custoTotalAjustado * projecaoMeses;
-            const liquidoPeriodo = liquidoMensal * projecaoMeses;
-            
-            // Calcular custo e faturamento por hora unitária (soma de todos os colaboradores)
-            // Somar o custo/hora de cada colaborador individualmente
+            let faturamentoMensal;
+            let valorHoraVenda;
+            let rateioAplicado;
             let custoHoraSomatorio = 0;
+            
             colaboradores.forEach(c => {
-                const horas = c.totalHorasMes || (c.horasDia * c.diasMes);
-                const custoDireto = c.valorHora * horas;
-                const rateio = custoFixo / colaboradores.length;
-                const custoTotalColab = custoDireto + rateio;
-                const custoHoraColab = custoTotalColab / horas;
-                custoHoraSomatorio += custoHoraColab;
+                custoHoraSomatorio += c.valorHora;
             });
-            
-            // Aplicar margem e impostos sobre o somatório
-            const vendaHoraSomatorio = custoHoraSomatorio / (1 - margem - impostos);
-            
-            const custoHoraUnitario = custoHoraSomatorio;
-            const vendaHoraUnitario = vendaHoraSomatorio;
 
-            // Calcular margem real se houver faturamento mensal real informado
-            let margemRealMensal = 0;
-            let margemRealPeriodo = 0;
+            // FATURAMENTO MENSAL: SEMPRE baseado no valor/hora SUGERIDO (meta)
+            faturamentoMensal = faturamentoMinimo;
+            valorHoraVenda = valorHoraSugerido;
+            
             if (faturamentoMensalReal > 0) {
-                margemRealMensal = (liquidoMensal / faturamentoMensalReal) * 100;
-                margemRealPeriodo = (liquidoPeriodo / (faturamentoMensalReal * projecaoMeses)) * 100;
+                // CENÁRIO COM FATURAMENTO INFORMADO
+                // Calcular margem real
+                const impostosReal = faturamentoMensalReal * impostos;
+                const liquidoReal = faturamentoMensalReal - impostosReal - custoColaboradores - custoFixo;
+                const margemReal = faturamentoMensalReal > 0 ? liquidoReal / faturamentoMensalReal : 0;
+                
+                // Rateio: aplicar apenas se margem insuficiente
+                if (margemReal >= margem) {
+                    rateioAplicado = 0; // Não precisa ratear
+                } else {
+                    rateioAplicado = totalHoras > 0 ? custoFixo / totalHoras : 0;
+                }
+            } else {
+                // CENÁRIO SEM FATURAMENTO - aplicar rateio
+                rateioAplicado = totalHoras > 0 ? custoFixo / totalHoras : 0;
             }
             
-            // Atualizar resumo
+            const custoHoraUnitario = custoHoraSomatorio + rateioAplicado;
+            const vendaHoraUnitario = valorHoraVenda;
+
+            // ====== 3. CALCULAR VALORES FINAIS ======
+            const impostosValor = faturamentoMensal * impostos;
+            const liquidoMensal = faturamentoMensal - impostosValor - custoColaboradores - custoFixo;
+            const faturamentoPeriodo = faturamentoMensal * projecaoMeses;
+            const liquidoPeriodo = liquidoMensal * projecaoMeses;
+            
+            // Valores reais (quando informado)
+            let liquidoMensalReal = liquidoMensal;
+            let liquidoPeriodoReal = liquidoPeriodo;
+            let impostosValorReal = impostosValor;
+            let margemRealMensal = margem * 100;
+            let margemRealPeriodo = margem * 100;
+            
+            if (faturamentoMensalReal > 0) {
+                impostosValorReal = faturamentoMensalReal * impostos;
+                liquidoMensalReal = faturamentoMensalReal - impostosValorReal - custoColaboradores - custoFixo;
+                liquidoPeriodoReal = liquidoMensalReal * projecaoMeses;
+                margemRealMensal = faturamentoMensalReal > 0 ? (liquidoMensalReal / faturamentoMensalReal) * 100 : 0;
+                margemRealPeriodo = faturamentoMensalReal > 0 ? (liquidoPeriodoReal / (faturamentoMensalReal * projecaoMeses)) * 100 : 0;
+            }
+            
+            // Saldos após antecipação
+            const liquidoParaAntecipacao = faturamentoMensalReal > 0 ? liquidoMensalReal : liquidoMensal;
+            const liquidoPeriodoParaAntecipacao = faturamentoMensalReal > 0 ? liquidoPeriodoReal : liquidoPeriodo;
+            const saldoAposAntecipacaoMensal = liquidoParaAntecipacao - antecipacaoLucros;
+            const saldoAposAntecipacaoPeriodo = liquidoPeriodoParaAntecipacao - (antecipacaoLucros * projecaoMeses);
+            
+            // ====== 4. ATUALIZAR INTERFACE ======
             document.getElementById('totalColabs').textContent = colaboradores.length;
             document.getElementById('custoColaboradores').textContent = formatarMoeda(custoColaboradores);
-            document.getElementById('custoTotal').textContent = formatarMoeda(custoTotalAjustado);
-            document.getElementById('rateioColab').textContent = formatarMoeda(rateioColaborador);
+            document.getElementById('custoTotal').textContent = formatarMoeda(custoColaboradores + custoFixo);
+            
+            // Mostrar rateio real aplicado (0 se não foi rateado)
+            const rateioRealPorColab = rateioAplicado > 0 ? (custoFixo / colaboradores.length) : 0;
+            document.getElementById('rateioColab').textContent = formatarMoeda(rateioRealPorColab);
             document.getElementById('faturamentoMensal').textContent = formatarMoeda(faturamentoMensal);
             document.getElementById('faturamentoPeriodo').textContent = formatarMoeda(faturamentoPeriodo);
             document.getElementById('custoHoraUnitario').textContent = formatarMoeda(custoHoraUnitario);
-            document.getElementById('vendaHoraUnitario').textContent = formatarMoeda(vendaHoraUnitario);
-            document.getElementById('liquidoMensal').textContent = formatarMoeda(liquidoMensal);
-            document.getElementById('liquidoPeriodo').textContent = formatarMoeda(liquidoPeriodo);
+            document.getElementById('vendaHoraUnitario').textContent = formatarMoeda(valorHoraSugerido);
+            document.getElementById('valorHoraAplicado').textContent = formatarMoeda(valorHoraAplicado);
             
-            // Processar antecipação de lucros
-            const antecipacaoLucros = parseFloat(document.getElementById('antecipacaoLucros').value) || 0;
-            const saldoAposAntecipacaoMensal = liquidoMensal - antecipacaoLucros;
-            const saldoAposAntecipacaoPeriodo = liquidoPeriodo - (antecipacaoLucros * projecaoMeses);
+            // Mostrar valores reais ou mínimos conforme o caso
+            if (faturamentoMensalReal > 0) {
+                document.getElementById('liquidoMensal').textContent = formatarMoeda(liquidoMensalReal);
+                document.getElementById('liquidoPeriodo').textContent = formatarMoeda(liquidoPeriodoReal);
+            } else {
+                document.getElementById('liquidoMensal').textContent = formatarMoeda(liquidoMensal);
+                document.getElementById('liquidoPeriodo').textContent = formatarMoeda(liquidoPeriodo);
+            }
             
             // Atualizar saldos após antecipação
             document.getElementById('saldoAposAntecipacaoMensal').textContent = formatarMoeda(saldoAposAntecipacaoMensal);
@@ -1016,27 +1048,37 @@
             if (faturamentoMensalReal > 0) {
                 rowFaturamentoExtra.style.display = 'grid';
                 document.getElementById('faturamentoExtraDisplay').textContent = formatarMoeda(faturamentoMensalReal);
-                document.getElementById('liquidoExtraDisplay').textContent = formatarMoeda(impostosValor);
+                document.getElementById('liquidoExtraDisplay').textContent = formatarMoeda(impostosValorReal);
             } else {
                 rowFaturamentoExtra.style.display = 'none';
             }
             
             document.getElementById('resumoCard').style.display = 'block';
 
-            // Atualizar tabela detalhada
+            // ====== 5. ATUALIZAR TABELA DETALHADA ======
             const tbody = document.getElementById('tabelaColaboradores');
             tbody.innerHTML = colaboradores.map(c => {
-                // Usar totalHorasMes se disponível, senão calcular
-                const horas = c.totalHorasMes || (c.horasDia * c.diasMes
-
-                );
+                const horas = c.totalHorasMes || (c.horasDia * c.diasMes);
                 const custoDireto = c.valorHora * horas;
-                // Usar o custo fixo para o rateio
-                const rateio = custoFixo / colaboradores.length;
-                const custoTotalColab = custoDireto + rateio;
-                const custoHoraBaseColab = custoTotalColab / horas;
                 
-                // Aplicar a mesma fórmula para garantir margem líquida
+                // Aplicar rateio conforme lógica principal
+                let rateioColab = 0;
+                if (faturamentoMensalReal > 0) {
+                    const impostosReal = faturamentoMensalReal * impostos;
+                    const liquidoReal = faturamentoMensalReal - impostosReal - custoColaboradores - custoFixo;
+                    const margemReal = faturamentoMensalReal > 0 ? liquidoReal / faturamentoMensalReal : 0;
+                    
+                    // Só aplica rateio se margem for insuficiente
+                    if (margemReal < margem) {
+                        rateioColab = custoFixo / colaboradores.length;
+                    }
+                } else {
+                    // Sem faturamento, sempre aplica rateio
+                    rateioColab = custoFixo / colaboradores.length;
+                }
+                
+                const custoTotalColab = custoDireto + rateioColab;
+                const custoHoraBaseColab = custoTotalColab / horas;
                 const valorHoraVendaColab = custoHoraBaseColab / (1 - margem - impostos);
 
                 return `
@@ -1044,7 +1086,7 @@
                         <td><strong>${c.nome}</strong></td>
                         <td>${formatarHoras(horas)}h</td>
                         <td>R$ ${formatarMoeda(custoDireto)}</td>
-                        <td>R$ ${formatarMoeda(rateio)}</td>
+                        <td>R$ ${formatarMoeda(rateioColab)}</td>
                         <td>R$ ${formatarMoeda(custoTotalColab)}</td>
                         <td>R$ ${formatarMoeda(custoHoraBaseColab)}</td>
                         <td><strong>R$ ${formatarMoeda(valorHoraVendaColab)}</strong></td>
