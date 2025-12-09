@@ -382,7 +382,7 @@
                                         <label for="projecaoMeses">Projeção (Meses)</label>
                                     </div>
                                 </div>
-                                <div class="col-md-12">
+                                <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="number" class="form-control" id="faturamentoExtra" value="0" min="0" step="500">
                                         <label for="faturamentoExtra">Faturamento Mensal Real (R$)</label>
@@ -390,6 +390,16 @@
                                     <div class="text-muted small mt-1 ms-2">
                                         <i class="fas fa-info-circle me-1"></i>
                                         Faturamento bruto real da empresa no mês
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="antecipacaoLucros" value="0" min="0" step="500">
+                                        <label for="antecipacaoLucros">Antecipação Lucros Mensal (R$)</label>
+                                    </div>
+                                    <div class="text-muted small mt-1 ms-2">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Valores antecipados/retirados do lucro
                                     </div>
                                 </div>
                             </div>
@@ -477,18 +487,34 @@
                             </div>
                             <div class="resumo-row">
                                 <div class="resumo-col">
-                                    <div class="resumo-label">
+                                    <div class="resumo-label" id="labelLiquidoMensal">
                                         <i class="fas fa-hand-holding-usd me-2"></i>
                                         Valor Líquido Mensal
                                     </div>
                                     <div class="resumo-value">R$ <span id="liquidoMensal">0</span></div>
                                 </div>
                                 <div class="resumo-col">
-                                    <div class="resumo-label">
+                                    <div class="resumo-label" id="labelLiquidoPeriodo">
                                         <i class="fas fa-coins me-2"></i>
                                         Valor Líquido do Período
                                     </div>
                                     <div class="resumo-value">R$ <span id="liquidoPeriodo">0</span></div>
+                                </div>
+                            </div>
+                            <div class="resumo-row" id="rowAntecipacao" style="display: none;">
+                                <div class="resumo-col">
+                                    <div class="resumo-label" id="labelSaldoMensal">
+                                        <i class="fas fa-minus-circle me-2"></i>
+                                        Saldo após Antecipação Mensal
+                                    </div>
+                                    <div class="resumo-value">R$ <span id="saldoAposAntecipacaoMensal">0</span></div>
+                                </div>
+                                <div class="resumo-col">
+                                    <div class="resumo-label" id="labelSaldoPeriodo">
+                                        <i class="fas fa-wallet me-2"></i>
+                                        Saldo após Antecipação Período
+                                    </div>
+                                    <div class="resumo-value">R$ <span id="saldoAposAntecipacaoPeriodo">0</span></div>
                                 </div>
                             </div>
                         </div>
@@ -599,6 +625,7 @@
                 impostos: document.getElementById('impostos').value,
                 projecaoMeses: document.getElementById('projecaoMeses').value,
                 faturamentoExtra: document.getElementById('faturamentoExtra').value,
+                antecipacaoLucros: document.getElementById('antecipacaoLucros').value,
                 horasDia: document.getElementById('horasDia').value,
                 diasMes: document.getElementById('diasMes').value
             };
@@ -947,9 +974,28 @@
             document.getElementById('liquidoMensal').textContent = formatarMoeda(liquidoMensal);
             document.getElementById('liquidoPeriodo').textContent = formatarMoeda(liquidoPeriodo);
             
+            // Processar antecipação de lucros
+            const antecipacaoLucros = parseFloat(document.getElementById('antecipacaoLucros').value) || 0;
+            const saldoAposAntecipacaoMensal = liquidoMensal - antecipacaoLucros;
+            const saldoAposAntecipacaoPeriodo = liquidoPeriodo - (antecipacaoLucros * projecaoMeses);
+            
+            // Atualizar saldos após antecipação
+            document.getElementById('saldoAposAntecipacaoMensal').textContent = formatarMoeda(saldoAposAntecipacaoMensal);
+            document.getElementById('saldoAposAntecipacaoPeriodo').textContent = formatarMoeda(saldoAposAntecipacaoPeriodo);
+            
+            // Mostrar/ocultar linha de antecipação
+            const rowAntecipacao = document.getElementById('rowAntecipacao');
+            if (antecipacaoLucros > 0) {
+                rowAntecipacao.style.display = 'grid';
+            } else {
+                rowAntecipacao.style.display = 'none';
+            }
+            
             // Atualizar labels com margem real se houver faturamento informado
-            const labelLiquidoMensal = document.querySelector('#resumoCard .resumo-row:last-child .resumo-col:first-child .resumo-label');
-            const labelLiquidoPeriodo = document.querySelector('#resumoCard .resumo-row:last-child .resumo-col:last-child .resumo-label');
+            const labelLiquidoMensal = document.getElementById('labelLiquidoMensal');
+            const labelLiquidoPeriodo = document.getElementById('labelLiquidoPeriodo');
+            const labelSaldoMensal = document.getElementById('labelSaldoMensal');
+            const labelSaldoPeriodo = document.getElementById('labelSaldoPeriodo');
             
             if (faturamentoMensalReal > 0) {
                 labelLiquidoMensal.innerHTML = `<i class="fas fa-hand-holding-usd me-2"></i>Valor Líquido Mensal (${margemRealMensal.toFixed(2)}%)`;
@@ -957,6 +1003,12 @@
             } else {
                 labelLiquidoMensal.innerHTML = `<i class="fas fa-hand-holding-usd me-2"></i>Valor Líquido Mensal`;
                 labelLiquidoPeriodo.innerHTML = `<i class="fas fa-coins me-2"></i>Valor Líquido do Período`;
+            }
+            
+            // Atualizar labels de saldo após antecipação
+            if (antecipacaoLucros > 0) {
+                labelSaldoMensal.innerHTML = `<i class="fas fa-minus-circle me-2"></i>Saldo após Retirada Mensal`;
+                labelSaldoPeriodo.innerHTML = `<i class="fas fa-wallet me-2"></i>Saldo após Retirada do Período`;
             }
             
             // Mostrar/ocultar linha de faturamento mensal real
@@ -975,7 +1027,9 @@
             const tbody = document.getElementById('tabelaColaboradores');
             tbody.innerHTML = colaboradores.map(c => {
                 // Usar totalHorasMes se disponível, senão calcular
-                const horas = c.totalHorasMes || (c.horasDia * c.diasMes);
+                const horas = c.totalHorasMes || (c.horasDia * c.diasMes
+
+                );
                 const custoDireto = c.valorHora * horas;
                 // Usar o custo fixo para o rateio
                 const rateio = custoFixo / colaboradores.length;
@@ -1037,6 +1091,13 @@
             }
         });
 
+        document.getElementById('antecipacaoLucros').addEventListener('input', function() {
+            salvarConfiguracoes();
+            if (carregarColaboradores().length > 0) {
+                calcularResultados();
+            }
+        });
+
         // Back to top functionality
         const backToTop = document.querySelector('.back-to-top');
         if (backToTop) {
@@ -1063,6 +1124,7 @@
             if (config.impostos !== undefined) document.getElementById('impostos').value = config.impostos;
             if (config.projecaoMeses !== undefined) document.getElementById('projecaoMeses').value = config.projecaoMeses;
             if (config.faturamentoExtra !== undefined) document.getElementById('faturamentoExtra').value = config.faturamentoExtra;
+            if (config.antecipacaoLucros !== undefined) document.getElementById('antecipacaoLucros').value = config.antecipacaoLucros;
             if (config.horasDia !== undefined) document.getElementById('horasDia').value = config.horasDia;
             if (config.diasMes !== undefined) document.getElementById('diasMes').value = config.diasMes;
             
